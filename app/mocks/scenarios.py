@@ -34,6 +34,7 @@ SCENARIOS = [
             Entity(
                 layer="targets",
                 entity_id="target-001",
+                name="מטרה X",
                 geometry="POINT (32.0853 34.7818)",
             )
         ],
@@ -55,9 +56,9 @@ SCENARIOS = [
             "3. **כוח ג** — מרחק 700 מטר"
         ),
         "entities": [
-            Entity(layer="forces", entity_id="force-001", geometry="POINT (32.0880 34.7830)"),
-            Entity(layer="forces", entity_id="force-002", geometry="POINT (32.0865 34.7800)"),
-            Entity(layer="forces", entity_id="force-003", geometry="POINT (32.0820 34.7850)"),
+            Entity(layer="forces", entity_id="force-001", name="כוח א", geometry="POINT (32.0880 34.7830)"),
+            Entity(layer="forces", entity_id="force-002", name="כוח ב", geometry="POINT (32.0865 34.7800)"),
+            Entity(layer="forces", entity_id="force-003", name="כוח ג", geometry="POINT (32.0820 34.7850)"),
         ],
     },
 
@@ -77,9 +78,9 @@ SCENARIOS = [
             "- **כוח ג** — 32.0820, 34.7850"
         ),
         "entities": [
-            Entity(layer="forces", entity_id="force-001", geometry="POINT (32.0880 34.7830)"),
-            Entity(layer="forces", entity_id="force-002", geometry="POINT (32.0865 34.7800)"),
-            Entity(layer="forces", entity_id="force-003", geometry="POINT (32.0820 34.7850)"),
+            Entity(layer="forces", entity_id="force-001", name="כוח א", geometry="POINT (32.0880 34.7830)"),
+            Entity(layer="forces", entity_id="force-002", name="כוח ב", geometry="POINT (32.0865 34.7800)"),
+            Entity(layer="forces", entity_id="force-003", name="כוח ג", geometry="POINT (32.0820 34.7850)"),
         ],
     },
 
@@ -122,8 +123,8 @@ SCENARIOS = [
             "- מנחת בראבו — 2.5 ק״מ (יום בלבד)"
         ),
         "entities": [
-            Entity(layer="landing-pads", entity_id="pad-alpha", geometry="POINT (32.0910 34.7750)"),
-            Entity(layer="landing-pads", entity_id="pad-bravo", geometry="POINT (32.0950 34.7700)"),
+            Entity(layer="landing-pads", entity_id="pad-alpha", name="מנחת אלפא", geometry="POINT (32.0910 34.7750)"),
+            Entity(layer="landing-pads", entity_id="pad-bravo", name="מנחת בראבו", geometry="POINT (32.0950 34.7700)"),
         ],
     },
 
@@ -141,6 +142,7 @@ SCENARIOS = [
             Entity(
                 layer="areas",
                 entity_id="area-001",
+                name="אזור 001",
                 geometry=(
                     "POLYGON ("
                     "(32.0800 34.7700, "
@@ -168,6 +170,7 @@ SCENARIOS = [
             Entity(
                 layer="routes",
                 entity_id="route-001",
+                name="מסלול 001",
                 geometry=(
                     "LINESTRING "
                     "(32.0800 34.7700, "
@@ -220,9 +223,9 @@ SCENARIOS = [
         ),
         "entities": [
             Entity(layer="targets", entity_id="target-001", geometry="POINT (32.0853 34.7818)"),
-            Entity(layer="forces", entity_id="force-001", geometry="POINT (32.0880 34.7830)"),
-            Entity(layer="forces", entity_id="force-002", geometry="POINT (32.0865 34.7800)"),
-            Entity(layer="forces", entity_id="force-003", geometry="POINT (32.0820 34.7850)"),
+            Entity(layer="forces", entity_id="force-001", name="כוח א", geometry="POINT (32.0880 34.7830)"),
+            Entity(layer="forces", entity_id="force-002", name="כוח ב", geometry="POINT (32.0865 34.7800)"),
+            Entity(layer="forces", entity_id="force-003", name="כוח ג", geometry="POINT (32.0820 34.7850)"),
         ],
     },
 ]
@@ -242,7 +245,7 @@ DEFAULT_SCENARIO = {
     "response": "This is a mock response.",
     "needs_clarification": False,
     "entities": [
-        Entity(layer="mock-layer", entity_id="mock-entity-1", geometry="POINT (32.0853 34.7818)")
+        Entity(layer="mock-layer", entity_id="mock-entity-1", name="ישות-1", geometry="POINT (32.0853 34.7818)")
     ],
 }
 

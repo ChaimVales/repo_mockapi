@@ -42,6 +42,7 @@ Entity - מודל של ישות גיאוגרפית
 class Entity(BaseModel):
     layer: str | None = None        # שם השכבה שהישות שייכת אליה (למשל "כבישים", "בניינים")
     entity_id: str | None = None    # מזהה ייחודי של הישות במערכת המקור
+    name: str | None = None         # שם תצוגה (לדוגמה "כוח א", "מטרה X") - לזיהוי בתוך טקסט התשובה
     geometry: str | None = None     # הצורה הגיאומטרית במחרוזת WKT (פירוט מלא בתיעוד למטה)
     """
     WKT geometry string using lat/lon (WGS84) coordinates.
@@ -104,3 +105,25 @@ HistoryResponse - תגובת ה-endpoint /history
 class HistoryResponse(BaseModel):
     user_personal_number: str                       # מזהה המשתמש שאליו שייכות השיחות
     conversations: list[ConversationSummary]        # רשימת תקצירי השיחות
+
+
+"""
+ConversationMessage - הודעה בודדת בשיחה שמורה
+sender: 'user' = שאלה מהמשתמש, 'bot' = תשובה מהמערכת.
+timestamp: ISO 8601. אצל user - הזמן שהמשתמש לחץ Enter. אצל bot - זמן השרת.
+"""
+class ConversationMessage(BaseModel):
+    message_id: str                                 # מזהה ייחודי להודעה
+    sender: Literal["user", "bot"]                  # שולח ההודעה
+    text: str                                       # תוכן ההודעה
+    timestamp: str                                  # זמן ב-ISO 8601
+
+
+"""
+ConversationDetail - תגובת ה-endpoint להחזרת שיחה מלאה לפי session_id
+מכיל את כל ההודעות של השיחה (גם של המשתמש וגם של הבוט) לתצוגה למצב read-only.
+"""
+class ConversationDetail(BaseModel):
+    session_id: str
+    summary: str
+    messages: list[ConversationMessage]             # כל ההודעות בסדר כרונולוגי

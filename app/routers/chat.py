@@ -1,5 +1,6 @@
 import asyncio                                  # מודול סטנדרטי לפעולות אסינכרוניות (sleep אסינכרוני)
 import json                                     # להמרת dict ל-JSON לשליחה ב-SSE
+import uuid                                     # למזהי הודעות ייחודיים
 from datetime import datetime                   # לפורמט session_id קריא: userId:timestamp
 
 from fastapi import APIRouter, Header
@@ -7,7 +8,7 @@ from fastapi.responses import StreamingResponse  # להחזרת SSE (Server-Sent
 
 from app.mocks.scenarios import match_scenario   # פונקציה שמחזירה תרחישים מדומים לפי תוכן ההודעה (מחליף AI אמיתי בפיתוח)
 from app.models.schemas import ChatRequest, ChatResponse   # מודלי Pydantic ל-input ו-output
-from app.store import add_conversation_to_history  # להוספת שיחה חדשה להיסטוריית המשתמש
+from app.store import add_conversation_to_history, add_message_to_conversation  # לאחסון
 
 router = APIRouter()
 
@@ -64,23 +65,38 @@ async def chat(
         await asyncio.sleep(SIMULATED_DELAY_SECONDS)
 
     # אם הלקוח לא שלח session_id (הודעה ראשונה) - יוצרים חדש בפורמט userId:timestamp
-    # ומוסיפים אותו להיסטוריה של המשתמש
     is_new_session = not body.session_id
     session_id = body.session_id or _build_session_id(user_personal_number)
     if is_new_session:
         add_conversation_to_history(user_personal_number, session_id, _build_summary(body.message))
 
+    # שמירת הודעת המשתמש - timestamp מהלקוח (אם לא נשלח: זמן השרת)
+    user_timestamp = body.timestamp or datetime.now().isoformat()
+    add_message_to_conversation(
+        user_personal_number, session_id,
+        message_id=str(uuid.uuid4()),
+        sender="user", text=body.message, timestamp=user_timestamp,
+    )
+
     # מתאים תרחיש מדומה לפי תוכן ההודעה (placeholder ל-AI אמיתי)
     scenario = match_scenario(body.message)
 
-    # בונה את התגובה. שימוש ב-[] לשדות חובה ו-.get() לאופציונליים
+    # שמירת תשובת הבוט - timestamp תמיד מהשרת
+    bot_timestamp = datetime.now().isoformat()
+    add_message_to_conversation(
+        user_personal_number, session_id,
+        message_id=str(uuid.uuid4()),
+        sender="bot", text=scenario["response"], timestamp=bot_timestamp,
+    )
+
+    # בונה את התגובה
     return ChatResponse(
-        response=scenario["response"],                                          # טקסט התשובה - שדה חובה בתרחיש
-        session_id=session_id,                                                  # מזהה השיחה (חדש או קיים)
-        needs_clarification=scenario.get("needs_clarification", False),         # אופציונלי, ברירת מחדל False
-        clarify_for=scenario.get("clarify_for"),                                # אופציונלי, ברירת מחדל None
-        reasoning_content=None,                                                 # אין chain of thought במצב mock
-        entities=scenario["entities"],                                          # ישויות גיאוגרפיות - שדה חובה בתרחיש
+        response=scenario["response"],
+        session_id=session_id,
+        needs_clarification=scenario.get("needs_clarification", False),
+        clarify_for=scenario.get("clarify_for"),
+        reasoning_content=None,
+        entities=scenario["entities"],
     )
 
 
@@ -109,7 +125,25 @@ async def chat_stream(
     if is_new_session:
         add_conversation_to_history(user_personal_number, session_id, _build_summary(body.message))
 
+    # שמירת הודעת המשתמש בהיסטוריה - timestamp מהלקוח (אם נשלח)
+    user_timestamp = body.timestamp or datetime.now().isoformat()
+    add_message_to_conversation(
+        user_personal_number, session_id,
+        message_id=str(uuid.uuid4()),
+        sender="user", text=body.message, timestamp=user_timestamp,
+    )
+
     scenario = match_scenario(body.message)
+    # מזהה והשעה של הודעת הבוט - נקבעים פעם אחת לפני השליחה
+    bot_message_id = str(uuid.uuid4())
+    bot_timestamp = datetime.now().isoformat()
+
+    # שמירת תשובת הבוט בהיסטוריה
+    add_message_to_conversation(
+        user_personal_number, session_id,
+        message_id=bot_message_id,
+        sender="bot", text=scenario["response"], timestamp=bot_timestamp,
+    )
 
     async def event_generator():
         """גנרטור אסינכרוני שמייצר event אחר event"""
@@ -117,15 +151,16 @@ async def chat_stream(
         # 1. שולחים את הפעולות אחת אחר השנייה עם השהיה ביניהן
         for action_text in scenario.get("actions", []):
             event = {"type": "action", "text": action_text}
-            # פורמט SSE: "data: <json>\n\n"
             yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
             await asyncio.sleep(ACTION_STEP_DELAY_SECONDS)
 
-        # 2. שולחים את התשובה הסופית
+        # 2. שולחים את התשובה הסופית - כולל message_id ו-timestamp של הבוט
         response_event = {
             "type": "response",
             "text": scenario["response"],
             "session_id": session_id,
+            "message_id": bot_message_id,                # מזהה ההודעה
+            "timestamp": bot_timestamp,                  # זמן השרת
             "entities": [e.model_dump() for e in scenario["entities"]],
             "needs_clarification": scenario.get("needs_clarification", False),
             "clarify_for": scenario.get("clarify_for"),
